@@ -1,9 +1,6 @@
 {
 	"compilerOptions": {
-		"lib": [
-			"es6",
-			"dom"
-		],
+		"lib": ["es2017", "dom"],
 		"module": "none",
 		"moduleResolution": "node",
 		"noFallthroughCasesInSwitch": true,
@@ -13,6 +10,14 @@
 		"outDir": "../media",
 		"removeComments": true,
 		"strict": true,
-		"target": "es5"
-	}
+		"target": "es5",
+		// Avoid type-checking third-party .d.ts files (e.g., @types/*) that may require a newer TS version
+		"skipLibCheck": true,
+		// Limit ambient types to none for the web build so unrelated @types packages aren't pulled in
+		"types": [],
+		// Prevent scanning node_modules/@types entirely to avoid parsing newer declaration syntax on older TS
+		"typeRoots": []
+	},
+	// Restrict the program to just the web sources and local .d.ts, excluding node_modules entirely
+	"include": ["./**/*.ts", "./**/*.d.ts"]
 }
