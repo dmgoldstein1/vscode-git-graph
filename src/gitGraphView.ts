@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { AvatarManager } from './avatarManager';
 import { getConfig } from './config';
-import { DataSource, GitCommitDetailsData, GitConfigKey } from './dataSource';
+import { DataSource, GitConfigKey } from './dataSource';
 import { ExtensionState } from './extensionState';
 import { Logger } from './logger';
 import { RepoFileWatcher } from './repoFileWatcher';
@@ -235,7 +235,7 @@ export class GitGraphView extends Disposable {
 				});
 				break;
 			case 'commitDetails':
-				let data = await Promise.all<GitCommitDetailsData, string | null>([
+				const [commitData, avatar] = await Promise.all([
 					msg.commitHash === UNCOMMITTED
 						? this.dataSource.getUncommittedDetails(msg.repo)
 						: msg.stash === null
@@ -245,8 +245,8 @@ export class GitGraphView extends Disposable {
 				]);
 				this.sendMessage({
 					command: 'commitDetails',
-					...data[0],
-					avatar: data[1],
+					...commitData,
+					avatar: avatar,
 					codeReview: msg.commitHash !== UNCOMMITTED ? this.extensionState.getCodeReview(msg.repo, msg.commitHash) : null,
 					refresh: msg.refresh
 				});
@@ -703,6 +703,12 @@ export class GitGraphView extends Disposable {
 		const globalState = this.extensionState.getGlobalViewState();
 		const workspaceState = this.extensionState.getWorkspaceViewState();
 
+		// Safely serialize state for embedding in a <script> tag to avoid breaking out via </script> or HTML parsing
+		const asScriptValue = (v: any) => v === undefined ? 'undefined' : JSON.stringify(v).replace(/</g, '\\u003c');
+		const initialStateJson = asScriptValue(initialState);
+		const globalStateJson = asScriptValue(globalState);
+		const workspaceStateJson = asScriptValue(workspaceState);
+
 		let body, numRepos = Object.keys(initialState.repos).length, colorVars = '', colorParams = '';
 		for (let i = 0; i < initialState.config.graph.colours.length; i++) {
 			colorVars += '--git-graph-color' + i + ':' + initialState.config.graph.colours[i] + '; ';
@@ -734,7 +740,7 @@ export class GitGraphView extends Disposable {
 				<div id="footer"></div>
 			</div>
 			<div id="scrollShadow"></div>
-			<script nonce="${nonce}">var initialState = ${JSON.stringify(initialState)}, globalState = ${JSON.stringify(globalState)}, workspaceState = ${JSON.stringify(workspaceState)};</script>
+			<script nonce="${nonce}">var initialState = ${initialStateJson}, globalState = ${globalStateJson}, workspaceState = ${workspaceStateJson};</script>
 			<script nonce="${nonce}" src="${this.getMediaUri('out.min.js')}"></script>
 			</body>`;
 		} else {
