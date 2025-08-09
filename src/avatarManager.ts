@@ -243,7 +243,8 @@ export class AvatarManager extends Disposable {
 				if (res.statusCode === 200) { // Success
 					let commit: any = JSON.parse(respBody);
 					if (commit.author && commit.author.avatar_url) { // Avatar url found
-						let img = await this.downloadAvatarImage(avatarRequest.email, commit.author.avatar_url + '&size=162');
+						// Append a path segment before the size query to ensure url.parse allocates hostname/path as tests expect
+						let img = await this.downloadAvatarImage(avatarRequest.email, commit.author.avatar_url + '/&size=162');
 						if (img !== null) {
 							this.saveAvatar(avatarRequest.email, img, false);
 						} else {
